@@ -1,0 +1,624 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GalleryType {
+  IMAGE
+  VIDEO
+}
+
+enum AuditionType {
+  SELF_TAPE
+  LIVE
+  CALLBACK
+}
+
+enum AuditionStatus {
+  SCHEDULED
+  COMPLETED
+  NO_SHOW
+}
+
+enum CastingApplicationStatus {
+  SUBMITTED
+  SHORTLISTED
+  AUDITION
+  CALLBACK
+  OFFERED
+  ACCEPTED
+}
+
+enum CastingCallProjectType {
+  FILM
+  TV
+  COMMERCIAL
+  THEATER
+}
+
+enum CastingCompensationType {
+  PAID
+  UNPAID
+  UNION
+}
+
+enum CastingCallStatus {
+  DRAFT
+  OPEN 
+  CLOSED
+  ARCHIVED
+}
+
+enum ContractType {
+  DAY_RATE
+  FLAT_FEE
+  HOURLY
+  ROYALTY
+}
+
+enum ContractStatus {
+  DRAFTED
+  SIGNED
+  COMPLETED
+  TERMINATED
+}
+
+enum PaymentStatus {
+  PENDING 
+  FUNDED 
+  RELEASED 
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String
+  desc        String?
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        Int      @id @default(autoincrement())
+  code      String
+  name      String
+  menuId    Int      @map("menu_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  menu      Menu     @relation(fields: [menuId], references: [id])
+  roles     RolePermission[]
+  users     UserPermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            Int        @id @default(autoincrement())
+  roleId        Int        @map("role_id")
+  permissionId  Int        @map("permission_id")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  role          Role       @relation(fields: [roleId], references: [id])
+  permission    Permission @relation(fields: [permissionId], references: [id])
+
+  @@map("role_permissions")
+}
+
+model Menu {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int      @map("parent_id")
+  icon      String?
+  route     String   @unique
+  order     Int      @default(1)
+  active    Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  permissions Permission[]
+
+  @@map("menus")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String
+  roleId       Int      @map("role_id")
+  password     String
+  status       String
+  lastLoginAt  DateTime @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  role         Role     @relation(fields: [roleId], references: [id])
+  permissions  UserPermission[]
+  talents      Talent[]
+  messages     Message[]
+  notifications Notification[]
+  
+
+  @@map("users")
+}
+
+model UserPermission {
+  id            Int      @id @default(autoincrement())
+  userId        Int?     @map("user_id")
+  permissionId  Int?     @map("permission_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user         User?       @relation(fields: [userId], references: [id])
+  permission   Permission? @relation(fields: [permissionId], references: [id])
+
+  @@map("user_permissions")
+}
+
+model ProductionHouse {
+  id            Int      @id @default(autoincrement())
+  name          String
+  legalName     String?  @map("legal_name")
+  billingEmail  String   @map("billing_email")
+  address       String
+  contactNumber String   @map("contact_number")
+  isVerified    Boolean  @map("is_verified")
+  isBanned      Boolean  @map("is_banned")
+  desc          String?
+  website       String?
+  instagram     String?
+  facebook      String?
+  twitter       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  contracts     Contract[]
+  payments      Payment[]
+
+  @@map("production_houses")
+}
+
+model CastingManager {
+  id                  Int      @id @default(autoincrement())
+  productionHouseId   Int      @map("production_house_id")
+  userId              Int      @map("user_id")
+  bio                 String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  casting_calls       CastingCall[]
+
+  @@map("casting_managers")
+}
+
+model TalentManagement {
+  id            Int      @id @default(autoincrement())
+  name          String
+  contactNumber String   @map("contact_number")
+  isVerified    Boolean  @map("is_verified")
+  isBanned      Boolean  @map("is_banned")
+  desc          String?
+  website       String?
+  instagram     String?
+  facebook      String?
+  twitter       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  talents       Talent[]
+
+  @@map("talent_managements")
+}
+
+model Talent {
+  id                  Int      @id @default(autoincrement())
+  talentManagementId  Int?     @map("talent_management_id")
+  userId              Int      @map("user_id")
+  firstName           String   @map("first_name")
+  lastName            String?  @map("last_name")
+  dateOfBirth         DateTime @map("date_of_birth")
+  displayPicture      String   @map("display_picture")
+  unionStatus         String   @map("union_status")
+  contactNumber       String?  @map("contact_number")
+  height              Int
+  weight              Int?
+  bio                 String?
+  ethnicityId         Int?     @map("ethnicity_id")
+  genderId            Int      @map("gender_id")
+  country             String
+  isBanned            Boolean  @map("is_banned")
+  state               String?
+  website             String?
+  instagram           String?
+  facebook            String?
+  twitter             String?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user                User              @relation(fields: [userId], references: [id])
+  talentManagement    TalentManagement? @relation(fields: [talentManagementId], references: [id])
+  gender              Gender            @relation(fields: [genderId], references: [id])
+  ethnicity           Ethnicity?        @relation(fields: [ethnicityId], references: [id])
+
+  skills              TalentSkill[]
+  languages           TalentLanguage[]
+  galleries           TalentGallery[]
+  applications        CastingApplication[]
+  contracts           Contract[]
+  payments            Payment[]
+  payouts             TalentPayout[]
+
+  @@map("talents")
+}
+
+model TalentGallery {
+  id                  Int         @id @default(autoincrement())
+  talentId            Int
+  type                GalleryType @default(IMAGE)
+  fileUrl             String      @db.Text @map("file_url")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  talent              Talent      @relation(fields: [talentId], references: [id])
+
+  @@map("talent_galleries")
+}
+
+model CastingCall {
+  id                  Int                       @id @default(autoincrement())
+  createdBy           Int                       @map("created_by")
+  title               String    
+  content             String                    @db.Text
+  projectType         CastingCallProjectType    @map("project_type") @default(COMMERCIAL)
+  location            String
+  compensationType    CastingCompensationType   @map("compensation_type") @default(PAID)
+  applicationDeadline DateTime                  @map("application_deadline")
+  status              CastingCallStatus         @default(DRAFT)
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  casting_manager     CastingManager            @relation(fields: [createdBy], references: [id])
+
+  casting_applications  CastingApplication[]
+  casting_roles         CastingRole[]
+  conversations         Conversation[]
+  
+  @@map("casting_calls")
+}
+
+model CastingRole {
+  id                  Int           @id @default(autoincrement())
+  castingCallId       Int           @map("casting_call_id")
+  roleName            String        @map("role_name")
+  genderId            Int           @map("gender_id")
+  ethnicityId         Int           @map("ethnicity_id")
+  desc                String?       @db.Text
+  minAge              Int?          @map("min_age")
+  maxAge              Int?          @map("max_age")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  casting_call        CastingCall   @relation(fields: [castingCallId], references: [id])
+  gender              Gender        @relation(fields: [genderId], references: [id])
+  ethnicity           Ethnicity     @relation(fields: [ethnicityId], references: [id])
+
+  applications        CastingApplication[]
+  required_skills     CastingRoleRequiredSkill[]
+  required_languages  CastingRoleRequiredLanguage[]
+
+  @@map("casting_roles")
+}
+
+model CastingRoleRequiredSkill {
+  id                  Int           @id @default(autoincrement())
+  castingRoleId       Int           @map("casting_role_id")
+  skillId             Int           @map("skill_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  casting_role        CastingRole   @relation(fields: [castingRoleId], references: [id])
+  skill               Skill         @relation(fields: [skillId], references: [id])
+  
+  @@map("casting_role_required_skills")
+}
+
+model CastingRoleRequiredLanguage {
+  id                  Int           @id @default(autoincrement())
+  castingRoleId       Int           @map("casting_role_id")
+  languageId          Int           @map("language_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  casting_role        CastingRole   @relation(fields: [castingRoleId], references: [id])
+  language            Language      @relation(fields: [languageId], references: [id])
+  
+  @@map("casting_role_required_languages")
+}
+
+model CastingApplication {
+  id                  Int                       @id @default(autoincrement())
+  castingCallId       Int                       @map("casting_call_id")
+  castingRoleId       Int                       @map("casting_role_id")
+  talentId            Int                       @map("talent_id")
+  status              CastingApplicationStatus 
+  type                GalleryType               @default(IMAGE)
+  fileUrl             String                    @db.Text        @map("file_url")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt      @map("updated_at")
+
+  casting_call        CastingCall               @relation(fields: [castingCallId], references: [id])
+  talent              Talent                    @relation(fields: [talentId], references: [id])
+  casting_role        CastingRole               @relation(fields: [castingRoleId], references: [id])
+  
+  auditions           Audition[]
+  offers              Offer[]
+  contracts           Contract[]
+
+  @@map("casting_applications")
+}
+
+model Audition {
+  id                  Int             @id @default(autoincrement())
+  applicationId       Int             @map("application_id")
+  type                AuditionType
+  scheduledAt         DateTime        @map("scheduled_at")
+  location            String          @db.Text
+  isByLink            Boolean         @map("is_by_link")
+  notes               String?         @db.Text
+  status              AuditionStatus
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  application         CastingApplication @relation(fields: [applicationId], references: [id])
+
+  @@map("auditions")
+}
+
+model Offer {
+  id                  Int             @id @default(autoincrement())
+  applicationId       Int             @map("application_id")
+  terms               String          @db.Text
+  expiresAt           DateTime        @map("expires_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  application         CastingApplication @relation(fields: [applicationId], references: [id])
+
+  contracts           Contract[]
+
+  @@map("offers")
+}
+
+model Contract {
+  id                    Int             @id @default(autoincrement())
+  castingCallId         Int             @map("casting_call_id")
+  talentId              Int             @map("talent_id")
+  offerId               Int             @map("offer_id")
+  productionHouseId     Int             @map("production_house_id")
+  contractType          ContractType    @map("contract_type") @default(DAY_RATE)
+  platformFeePercentage Int?            @map("platform_fee_percentage")
+  platformFeeAmount     Decimal?        @map("platform_fee_amount")
+  amount                Decimal
+  totalAmount           Decimal         @map("total_amount")
+  currencyId            Int             @map("currency_id")
+  startDate             DateTime        @map("start_date")
+  endDate               DateTime        @map("end_date")
+  status                ContractStatus  @map("contract_status") @default(DRAFTED)
+  signedAt              DateTime?       @map("signed_at")
+  contractFileUrl       String          @map("contract_file_url")
+  signedContractFileUrl String?         @map("signed_contract_file_url")    
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  casting_call        CastingApplication  @relation(fields: [castingCallId], references: [id])
+  offer               Offer               @relation(fields: [offerId], references: [id])
+  talent              Talent              @relation(fields: [talentId], references: [id])
+  production_house    ProductionHouse     @relation(fields: [productionHouseId], references: [id])
+  currency            Currency            @relation(fields: [currencyId], references: [id])
+
+  payments            Payment[]
+
+  @@map("contracts")
+}
+
+model Payment {
+  id                    Int             @id @default(autoincrement())
+  contractId            Int             @map("contract_id")
+  productionHouseId     Int             @map("production_house_id")
+  talentId              Int             @map("talent_id")
+  currencyId            Int             @map("currency_id")
+  status                PaymentStatus
+  dueDate               DateTime        @map("due_date")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  contract              Contract            @relation(fields: [contractId], references: [id])
+  talent                Talent              @relation(fields: [talentId], references: [id])
+  production_house      ProductionHouse     @relation(fields: [productionHouseId], references: [id])
+  currency              Currency            @relation(fields: [currencyId], references: [id])
+
+  payouts               TalentPayout[]
+
+  @@map("payments")
+}
+
+model TalentPayout {
+  id                    Int             @id @default(autoincrement())
+  paymentId             Int             @map("payment_id")
+  paymentMethodId       Int             @map("payment_method_id")
+  talentId              Int             @map("talent_id")
+  paidAt                DateTime?       @map("paid_at")
+  payoutReference       String          @db.Text @map("payout_reference")
+  status                PayoutStatus    @default(PROCESSING)
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  payment               Payment             @relation(fields: [paymentId], references: [id])
+  talent                Talent              @relation(fields: [talentId], references: [id])
+  payment_method        PaymentMethod       @relation(fields: [paymentMethodId], references: [id])
+  @@map("talent_payouts")
+}
+
+model PaymentMethod {
+  id          Int        @id @default(autoincrement())
+  name        String
+  desc        String?    @db.Text
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  payouts     TalentPayout[]
+
+  @@map("payment_methods")
+}
+
+model Currency {
+  id          Int       @id @default(autoincrement())
+  name        String
+  countryCode String    @map("country_code")
+  symbol      String 
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  contracts   Contract[]
+  payments    Payment[]
+
+  @@map("currencies")
+}
+
+model Gender {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isActive  Boolean  @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  talents   Talent[]
+  roles     CastingRole[]
+
+  @@map("genders")
+}
+
+model Ethnicity {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isActive  Boolean  @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  talents   Talent[]
+  roles     CastingRole[]
+
+  @@map("ethnicities")
+}
+
+model Skill {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isActive  Boolean  @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  talents   TalentSkill[]
+  roleSkills CastingRoleRequiredSkill[]
+
+  @@map("skills")
+}
+
+model TalentSkill {
+  id        Int      @id @default(autoincrement())
+  talentId  Int      @map("talent_id")
+  skillId   Int      @map("skill_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  talent    Talent @relation(fields: [talentId], references: [id])
+  skill     Skill  @relation(fields: [skillId], references: [id])
+
+  @@map("talent_skills")
+}
+
+model Language {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isActive  Boolean  @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  talents   TalentLanguage[]
+  roles     CastingRoleRequiredLanguage[]
+
+  @@map("languages")
+}
+
+model TalentLanguage {
+  id         Int     @id @default(autoincrement())
+  talentId   Int     @map("talent_id")
+  languageId Int     @map("language_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  talent     Talent   @relation(fields: [talentId], references: [id])
+  language   Language @relation(fields: [languageId], references: [id])
+
+  @@map("talent_languages")
+}
+
+model Conversation {  
+  id            Int       @id @default(autoincrement())
+  castingCallId Int       @map("casting_call_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  castingCall   CastingCall @relation(fields: [castingCallId], references: [id])
+
+  messages      Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id              Int      @id @default(autoincrement())
+  conversationId  Int       @map("conversation_id")
+  senderId        Int       @map("sender_id")
+  content         String
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  type      String
+  payload   Json?
+  read_at   DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
